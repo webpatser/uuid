@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Webpatser\PureUuid;
+namespace Webpatser\Uuid;
 
 use Exception;
 
