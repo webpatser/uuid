@@ -1,6 +1,6 @@
-# Pure PHP UUID Library
+# High-Performance UUID Library
 
-A high-performance, pure PHP library for generating and validating universally unique identifiers (UUIDs) according to **RFC 4122** and **RFC 9562** standards.
+A blazing fast PHP library for generating and validating universally unique identifiers (UUIDs) according to **RFC 4122** and **RFC 9562** standards.
 
 [![PHP Version](https://img.shields.io/badge/PHP-8.2%2B-blue.svg)](https://php.net)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -158,8 +158,8 @@ MIT License. See [LICENSE](LICENSE) file.
 
 ## 🤝 Contributing
 
-This is a pure UUID library focused on performance and standards compliance. For Laravel-specific integrations, see [webpatser/laravel-uuid](https://github.com/webpatser/laravel-uuid).
+This is a high-performance UUID library focused on speed and standards compliance. For Laravel-specific integrations, see [webpatser/laravel-uuid](https://github.com/webpatser/laravel-uuid).
 
 ---
 
-**Pure. Fast. Standards-compliant.**
+**Fast. Modern. Standards-compliant.**
