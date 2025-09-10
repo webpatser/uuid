@@ -26,12 +26,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Webpatser\\Uuid\\": "src/"
+            "Webpatser\\PureUuid\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Webpatser\\Uuid\\Tests\\": "tests/"
+            "Webpatser\\PureUuid\\Tests\\": "tests/"
         }
     },
     "scripts": {

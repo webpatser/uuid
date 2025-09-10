@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Webpatser\Uuid\Tests;
+namespace Webpatser\PureUuid\Tests;
 
 use PHPUnit\Framework\TestCase;
-use Webpatser\Uuid\Uuid;
+use Webpatser\PureUuid\Uuid;
 use Exception;
 
 class UuidTest extends TestCase
