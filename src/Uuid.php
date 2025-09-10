@@ -467,7 +467,8 @@ class Uuid
             return (bool) preg_match('~'.static::VALID_UUID_REGEX.'~', $uuid->string);
         }
 
-        return (bool) preg_match('~'.static::VALID_UUID_REGEX.'~', static::import($uuid)->string);
+        // Validate string format directly without importing (which could throw exception)
+        return (bool) preg_match('~'.static::VALID_UUID_REGEX.'~', (string) $uuid);
     }
 
     public static function nil(): self
