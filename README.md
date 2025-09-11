@@ -123,6 +123,35 @@ foreach ([1, 4, 6, 7, 8] as $version) {
 }
 ```
 
+### SQL Server GUID Support
+
+Handle SQL Server's mixed-endianness GUID format automatically:
+
+```php
+// SQL Server stores GUIDs with mixed endianness - first 8 bytes reversed
+$sqlServerGuid = '825B076B-44EC-E511-80DC-00155D0ABC54';  // From SQL Server
+$standardUuid = Uuid::importFromSqlServer($sqlServerGuid);   // Corrected byte order
+echo $standardUuid; // '6B075B82-EC44-11E5-80DC-00155D0ABC54'
+
+// Convert standard UUID to SQL Server format
+$uuid = Uuid::v4();
+$sqlServerFormat = $uuid->toSqlServer();                    // Mixed endianness
+$sqlServerBinary = $uuid->toSqlServerBinary();              // For BINARY storage
+
+// Round-trip conversion (lossless)
+$original = '6B075B82-EC44-11E5-80DC-00155D0ABC54';
+$sqlServer = Uuid::import($original)->toSqlServer();        // To SQL Server
+$backToStandard = Uuid::importFromSqlServer($sqlServer);    // Back to standard
+// $original === $backToStandard->string
+
+// Heuristic detection (optional)
+if (Uuid::isSqlServerFormat($someGuid)) {
+    $corrected = Uuid::importFromSqlServer($someGuid);
+}
+```
+
+**Fixes byte order problems when importing UUIDs from SQL Server `uniqueidentifier` columns.**
+
 ## 🛡️ Security & Standards
 
 - ✅ **RFC 4122** compliant (original UUID standard)
