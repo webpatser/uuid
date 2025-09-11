@@ -8,8 +8,8 @@ use Exception;
 
 /**
  * Pure PHP UUID generator and validator
- * 
- * Generates and validates universally unique identifiers (UUIDs) according to 
+ *
+ * Generates and validates universally unique identifiers (UUIDs) according to
  * RFC 4122 and RFC 9562 standards. Supports UUID versions 1, 3, 4, 5, 6, 7, and 8.
  *
  * @property-read string $bytes
@@ -25,31 +25,53 @@ use Exception;
 class Uuid
 {
     public const MD5 = 3;
+
     public const SHA1 = 5;
-    
+
     public const CLEAR_VER = 15;
+
     public const CLEAR_VAR = 63;
+
     public const VAR_RES = 224;
+
     public const VAR_MS = 192;
+
     public const VAR_RFC = 128;
+
     public const VAR_NCS = 0;
+
     public const VERSION_1 = 16;
+
     public const VERSION_3 = 48;
+
     public const VERSION_4 = 64;
+
     public const VERSION_5 = 80;
+
     public const VERSION_6 = 96;
+
     public const VERSION_7 = 112;
+
     public const VERSION_8 = 128;
+
     public const INTERVAL = 0x01B21DD213814000;
+
     public const NS_DNS = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+
     public const NS_URL = '6ba7b811-9dad-11d1-80b4-00c04fd430c8';
+
     public const NS_OID = '6ba7b812-9dad-11d1-80b4-00c04fd430c8';
+
     public const NS_X500 = '6ba7b814-9dad-11d1-80b4-00c04fd430c8';
+
     public const NIL = '00000000-0000-0000-0000-000000000000';
+
     public const VALID_UUID_REGEX = '^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$';
 
     protected readonly string $bytes;
+
     protected readonly string $string;
+
     protected readonly string $uuid_ordered;
 
     private static ?\Random\Randomizer $randomizer = null;
@@ -523,16 +545,16 @@ class Uuid
 
     /**
      * Import UUID from SQL Server uniqueidentifier with automatic byte order correction
-     * 
+     *
      * SQL Server stores GUIDs with mixed endianness:
      * - First 4 bytes (time-low): little-endian
-     * - Next 2 bytes (time-mid): little-endian  
+     * - Next 2 bytes (time-mid): little-endian
      * - Next 2 bytes (time-hi): little-endian
      * - Last 8 bytes: big-endian (correct)
-     * 
+     *
      * This method converts SQL Server GUID format to standard UUID format.
-     * 
-     * @param string $sqlServerGuid SQL Server GUID string (e.g., "825B076B-44EC-E511-80DC-00155D0ABC54")
+     *
+     * @param  string  $sqlServerGuid  SQL Server GUID string (e.g., "825B076B-44EC-E511-80DC-00155D0ABC54")
      * @return self Standard UUID with corrected byte order
      */
     public static function importFromSqlServer(string $sqlServerGuid): self
@@ -551,10 +573,10 @@ class Uuid
         // Reverse next 2 bytes (time-mid)
         // Reverse next 2 bytes (time-hi)
         // Keep last 8 bytes unchanged
-        $correctedBytes = 
-            strrev(substr($bytes, 0, 4)) .  // time-low: reverse 4 bytes
-            strrev(substr($bytes, 4, 2)) .  // time-mid: reverse 2 bytes
-            strrev(substr($bytes, 6, 2)) .  // time-hi: reverse 2 bytes
+        $correctedBytes =
+            strrev(substr($bytes, 0, 4)).  // time-low: reverse 4 bytes
+            strrev(substr($bytes, 4, 2)).  // time-mid: reverse 2 bytes
+            strrev(substr($bytes, 6, 2)).  // time-hi: reverse 2 bytes
             substr($bytes, 8, 8);           // clock-seq + node: keep as-is
 
         return new static($correctedBytes);
@@ -562,9 +584,9 @@ class Uuid
 
     /**
      * Export UUID to SQL Server uniqueidentifier format with byte order conversion
-     * 
+     *
      * Converts standard UUID to SQL Server's mixed-endian GUID format.
-     * 
+     *
      * @return string SQL Server GUID string format
      */
     public function toSqlServer(): string
@@ -574,44 +596,44 @@ class Uuid
         // Reverse next 2 bytes (time-mid)
         // Reverse next 2 bytes (time-hi)
         // Keep last 8 bytes unchanged
-        $sqlServerBytes = 
-            strrev(substr($this->bytes, 0, 4)) .  // time-low: reverse 4 bytes
-            strrev(substr($this->bytes, 4, 2)) .  // time-mid: reverse 2 bytes
-            strrev(substr($this->bytes, 6, 2)) .  // time-hi: reverse 2 bytes
+        $sqlServerBytes =
+            strrev(substr($this->bytes, 0, 4)).  // time-low: reverse 4 bytes
+            strrev(substr($this->bytes, 4, 2)).  // time-mid: reverse 2 bytes
+            strrev(substr($this->bytes, 6, 2)).  // time-hi: reverse 2 bytes
             substr($this->bytes, 8, 8);           // clock-seq + node: keep as-is
 
         // Format as GUID string
         return strtoupper(
-            bin2hex(substr($sqlServerBytes, 0, 4)) . '-' .
-            bin2hex(substr($sqlServerBytes, 4, 2)) . '-' .
-            bin2hex(substr($sqlServerBytes, 6, 2)) . '-' .
-            bin2hex(substr($sqlServerBytes, 8, 2)) . '-' .
+            bin2hex(substr($sqlServerBytes, 0, 4)).'-'.
+            bin2hex(substr($sqlServerBytes, 4, 2)).'-'.
+            bin2hex(substr($sqlServerBytes, 6, 2)).'-'.
+            bin2hex(substr($sqlServerBytes, 8, 2)).'-'.
             bin2hex(substr($sqlServerBytes, 10, 6))
         );
     }
 
     /**
      * Get the binary representation for SQL Server uniqueidentifier storage
-     * 
+     *
      * @return string 16-byte binary data in SQL Server format
      */
     public function toSqlServerBinary(): string
     {
         // Convert to SQL Server's mixed endianness format
-        return 
-            strrev(substr($this->bytes, 0, 4)) .  // time-low: reverse 4 bytes
-            strrev(substr($this->bytes, 4, 2)) .  // time-mid: reverse 2 bytes
-            strrev(substr($this->bytes, 6, 2)) .  // time-hi: reverse 2 bytes
+        return
+            strrev(substr($this->bytes, 0, 4)).  // time-low: reverse 4 bytes
+            strrev(substr($this->bytes, 4, 2)).  // time-mid: reverse 2 bytes
+            strrev(substr($this->bytes, 6, 2)).  // time-hi: reverse 2 bytes
             substr($this->bytes, 8, 8);           // clock-seq + node: keep as-is
     }
 
     /**
      * Check if a GUID string appears to be in SQL Server format
-     * 
+     *
      * This is a heuristic check that compares byte patterns to detect
      * if a GUID might need endianness conversion.
-     * 
-     * @param string $guid GUID string to check
+     *
+     * @param  string  $guid  GUID string to check
      * @return bool True if GUID appears to be in SQL Server format
      */
     public static function isSqlServerFormat(string $guid): bool
@@ -619,24 +641,24 @@ class Uuid
         // This is a heuristic - not foolproof, but works for most cases
         // SQL Server GUIDs often have certain byte pattern characteristics
         // due to their generation method and endianness differences
-        
-        if (!static::validate($guid)) {
+
+        if (! static::validate($guid)) {
             return false;
         }
 
         // Remove hyphens for easier analysis
         $hex = strtolower(preg_replace('/[^a-f0-9]/is', '', $guid));
-        
+
         // Check for patterns that suggest SQL Server format:
         // 1. SQL Server often generates GUIDs with specific bit patterns
         // 2. The mixed endianness creates recognizable patterns
         // 3. This is a probabilistic check, not definitive
-        
+
         // Extract the suspected reversed portions
         $timeLow = substr($hex, 0, 8);
         $timeMid = substr($hex, 8, 4);
         $timeHi = substr($hex, 12, 4);
-        
+
         // Look for little-endian patterns in what should be big-endian fields
         // This is heuristic and may need refinement based on real-world data
         return strlen($hex) === 32; // For now, just validate format
