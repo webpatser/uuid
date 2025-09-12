@@ -1,5 +1,9 @@
 # High-Performance UUID Library
 
+[![Total Downloads](https://img.shields.io/packagist/dt/webpatser/uuid.svg)](https://packagist.org/packages/webpatser/uuid)
+[![PHP Version](https://img.shields.io/packagist/php-v/webpatser/uuid.svg)](https://packagist.org/packages/webpatser/uuid)
+[![License](https://img.shields.io/packagist/l/webpatser/uuid.svg)](https://packagist.org/packages/webpatser/uuid)
+
 Blazing fast PHP UUID library leveraging **PHP 8.2+ and 8.4** cutting-edge features for maximum performance. **15% faster than Ramsey UUID** with modern optimizations.
 
 ## ⚡ Modern PHP Performance Features
