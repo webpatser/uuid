@@ -100,9 +100,10 @@ class Uuid
     /**
      * Generate a UUID of the specified version
      */
+    #[\NoDiscard]
     public static function generate(int $ver = 1, mixed $node = null, ?string $ns = null): self
     {
-        return match ((int) $ver) {
+        return match ($ver) {
             1 => new static(static::mintTime($node)),
             3 => new static(static::mintName(static::MD5, $node, $ns)),
             4 => new static(static::mintRand()),
@@ -118,6 +119,7 @@ class Uuid
     /**
      * Generate UUID version 4 (random)
      */
+    #[\NoDiscard]
     public static function v4(): self
     {
         return static::generate(4);
@@ -126,6 +128,7 @@ class Uuid
     /**
      * Generate UUID version 7 (Unix timestamp + random)
      */
+    #[\NoDiscard]
     public static function v7(): self
     {
         return static::generate(7);
@@ -134,8 +137,7 @@ class Uuid
     protected static function mintTime(?string $node = null): string
     {
         /** Get time since Gregorian calendar reform in 100ns intervals
-         * Using hrtime for better precision and monotonic behavior.
-         * hrtime provides nanosecond precision and is immune to clock changes.
+         * Using microtime(true) for Unix epoch-based timestamp calculation.
          */
         $unixTimestamp = microtime(true);
         $time = $unixTimestamp * 10000000 + static::INTERVAL;
@@ -147,7 +149,7 @@ class Uuid
         preg_match("/^\d+/", $time, $time);
 
         // And now to a 64-bit binary representation
-        $time = base_convert($time[0], 10, 16);
+        $time = base_convert(array_first($time), 10, 16);
         $time = pack('H*', str_pad($time, 16, '0', STR_PAD_LEFT));
 
         // Reorder bytes to their proper locations in the UUID
@@ -191,16 +193,7 @@ class Uuid
 
     private static function randomHexBytes(int $hexLength): string
     {
-        // PHP 8.3+ optimization: generate hex directly from character set
-        if (method_exists(self::getRandomizer(), 'getBytesFromString')) {
-            return self::getRandomizer()->getBytesFromString('0123456789abcdef', $hexLength);
-        }
-
-        // Fallback for PHP 8.2: convert binary to hex
-        $binaryLength = (int) ceil($hexLength / 2);
-        $hex = bin2hex(self::randomBytes($binaryLength));
-
-        return substr($hex, 0, $hexLength);
+        return self::getRandomizer()->getBytesFromString('0123456789abcdef', $hexLength);
     }
 
     protected static function makeBin(mixed $str, int $len): ?string
@@ -248,7 +241,7 @@ class Uuid
                 $uuid = substr(sha1($ns.$node, true), 0, 16);
                 break;
             default:
-                // no default really required here
+                throw new Exception('Unsupported hash algorithm for name-based UUID.');
         }
 
         // set variant
@@ -324,7 +317,7 @@ class Uuid
         preg_match("/^\d+/", $time, $time);
 
         // And now to a 64-bit binary representation
-        $time = base_convert($time[0], 10, 16);
+        $time = base_convert(array_first($time), 10, 16);
         $time = pack('H*', str_pad($time, 16, '0', STR_PAD_LEFT));
 
         // For V6: Reorder timestamp bytes for better sorting
@@ -383,18 +376,16 @@ class Uuid
         return $uuid;
     }
 
+    #[\NoDiscard]
     public static function import(string $uuid): self
     {
         return new static(static::makeBin($uuid, 16));
     }
 
+    #[\NoDiscard]
     public static function compare(string $a, string $b): bool
     {
-        if (static::makeBin($a, 16) == static::makeBin($b, 16)) {
-            return true;
-        } else {
-            return false;
-        }
+        return static::makeBin($a, 16) == static::makeBin($b, 16);
     }
 
     public function __get(string $var): mixed
@@ -462,12 +453,6 @@ class Uuid
             $timestampMs = ($timestampMs << 8) | ord($this->bytes[$i]);
         }
 
-        // PHP 8.4+ optimization: use DateTime::createFromTimestamp if available
-        if (method_exists(\DateTime::class, 'createFromTimestamp')) {
-            return $timestampMs / 1000.0;
-        }
-
-        // Convert milliseconds to seconds (float)
         return $timestampMs / 1000.0;
     }
 
@@ -483,6 +468,7 @@ class Uuid
         };
     }
 
+    #[\NoDiscard]
     public static function validate(mixed $uuid): bool
     {
         if ($uuid instanceof self) {
@@ -493,6 +479,7 @@ class Uuid
         return (bool) preg_match('~'.static::VALID_UUID_REGEX.'~', (string) $uuid);
     }
 
+    #[\NoDiscard]
     public static function nil(): self
     {
         return static::import(static::NIL);
@@ -515,6 +502,7 @@ class Uuid
     /**
      * Performance benchmark method for comparing UUID generation speeds
      */
+    #[\NoDiscard]
     public static function benchmark(int $iterations = 10000, int $version = 7): array
     {
         $startTime = hrtime(true);
@@ -557,6 +545,7 @@ class Uuid
      * @param  string  $sqlServerGuid  SQL Server GUID string (e.g., "825B076B-44EC-E511-80DC-00155D0ABC54")
      * @return self Standard UUID with corrected byte order
      */
+    #[\NoDiscard]
     public static function importFromSqlServer(string $sqlServerGuid): self
     {
         // Remove hyphens and validate format
@@ -589,6 +578,7 @@ class Uuid
      *
      * @return string SQL Server GUID string format
      */
+    #[\NoDiscard]
     public function toSqlServer(): string
     {
         // Convert to SQL Server's mixed endianness:
@@ -617,6 +607,7 @@ class Uuid
      *
      * @return string 16-byte binary data in SQL Server format
      */
+    #[\NoDiscard]
     public function toSqlServerBinary(): string
     {
         // Convert to SQL Server's mixed endianness format
@@ -627,40 +618,4 @@ class Uuid
             substr($this->bytes, 8, 8);           // clock-seq + node: keep as-is
     }
 
-    /**
-     * Check if a GUID string appears to be in SQL Server format
-     *
-     * This is a heuristic check that compares byte patterns to detect
-     * if a GUID might need endianness conversion.
-     *
-     * @param  string  $guid  GUID string to check
-     * @return bool True if GUID appears to be in SQL Server format
-     */
-    public static function isSqlServerFormat(string $guid): bool
-    {
-        // This is a heuristic - not foolproof, but works for most cases
-        // SQL Server GUIDs often have certain byte pattern characteristics
-        // due to their generation method and endianness differences
-
-        if (! static::validate($guid)) {
-            return false;
-        }
-
-        // Remove hyphens for easier analysis
-        $hex = strtolower(preg_replace('/[^a-f0-9]/is', '', $guid));
-
-        // Check for patterns that suggest SQL Server format:
-        // 1. SQL Server often generates GUIDs with specific bit patterns
-        // 2. The mixed endianness creates recognizable patterns
-        // 3. This is a probabilistic check, not definitive
-
-        // Extract the suspected reversed portions
-        $timeLow = substr($hex, 0, 8);
-        $timeMid = substr($hex, 8, 4);
-        $timeHi = substr($hex, 12, 4);
-
-        // Look for little-endian patterns in what should be big-endian fields
-        // This is heuristic and may need refinement based on real-world data
-        return strlen($hex) === 32; // For now, just validate format
-    }
 }

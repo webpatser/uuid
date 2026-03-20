@@ -2,143 +2,79 @@
 
 declare(strict_types=1);
 
-namespace Webpatser\Uuid\Tests;
-
-use PHPUnit\Framework\TestCase;
 use Webpatser\Uuid\Uuid;
 
-/**
- * Tests for SQL Server GUID endianness handling
- */
-class SqlServerTest extends TestCase
-{
-    /**
-     * Test SQL Server GUID import with byte order correction
-     */
-    public function test_import_from_sql_server(): void
-    {
-        // The exact case from GitHub issue #11
+describe('SQL Server GUID handling', function () {
+    test('imports from SQL Server with byte order correction', function () {
         $sqlServerGuid = '825B076B-44EC-E511-80DC-00155D0ABC54';
         $expectedStandardUuid = '6B075B82-EC44-11E5-80DC-00155D0ABC54';
 
         $uuid = Uuid::importFromSqlServer($sqlServerGuid);
 
-        $this->assertEquals($expectedStandardUuid, strtoupper($uuid->string));
-        $this->assertTrue(Uuid::validate($uuid->string));
-    }
+        expect(strtoupper($uuid->string))->toBe($expectedStandardUuid)
+            ->and(Uuid::validate($uuid->string))->toBeTrue();
+    });
 
-    /**
-     * Test SQL Server GUID export with byte order conversion
-     */
-    public function test_to_sql_server(): void
-    {
+    test('exports to SQL Server format', function () {
         $standardUuid = '6B075B82-EC44-11E5-80DC-00155D0ABC54';
         $expectedSqlServerGuid = '825B076B-44EC-E511-80DC-00155D0ABC54';
 
         $uuid = Uuid::import($standardUuid);
-        $sqlServerFormat = $uuid->toSqlServer();
 
-        $this->assertEquals($expectedSqlServerGuid, $sqlServerFormat);
-    }
+        expect($uuid->toSqlServer())->toBe($expectedSqlServerGuid);
+    });
 
-    /**
-     * Test round-trip conversion
-     */
-    public function test_round_trip_conversion(): void
-    {
+    test('round-trip conversion preserves UUID', function () {
         $originalUuid = '6B075B82-EC44-11E5-80DC-00155D0ABC54';
 
         $uuid = Uuid::import($originalUuid);
-        $sqlServerFormat = $uuid->toSqlServer();
-        $backToStandard = Uuid::importFromSqlServer($sqlServerFormat);
+        $backToStandard = Uuid::importFromSqlServer($uuid->toSqlServer());
 
-        $this->assertEquals($originalUuid, strtoupper($backToStandard->string));
-    }
+        expect(strtoupper($backToStandard->string))->toBe($originalUuid);
+    });
 
-    /**
-     * Test SQL Server binary format
-     */
-    public function test_sql_server_binary(): void
-    {
-        $standardUuid = '6B075B82-EC44-11E5-80DC-00155D0ABC54';
-        $uuid = Uuid::import($standardUuid);
-
+    test('SQL Server binary is 16 bytes and differs from standard', function () {
+        $uuid = Uuid::import('6B075B82-EC44-11E5-80DC-00155D0ABC54');
         $sqlServerBinary = $uuid->toSqlServerBinary();
-        $this->assertEquals(16, strlen($sqlServerBinary));
 
-        // The binary should be different from standard binary due to endianness
-        $this->assertNotEquals($uuid->bytes, $sqlServerBinary);
-    }
+        expect(strlen($sqlServerBinary))->toBe(16)
+            ->and($sqlServerBinary)->not->toBe($uuid->bytes);
+    });
 
-    /**
-     * Test endianness conversion with different UUID versions
-     */
-    public function test_endianess_with_different_versions(): void
-    {
+    test('endianness conversion works with different versions', function () {
         $testUuids = [
-            Uuid::generate(1),  // V1 time-based
-            Uuid::v4(),         // V4 random
-            Uuid::v7(),         // V7 time-ordered
+            Uuid::generate(1),
+            Uuid::v4(),
+            Uuid::v7(),
         ];
 
         foreach ($testUuids as $uuid) {
-            $sqlServerFormat = $uuid->toSqlServer();
-            $backToOriginal = Uuid::importFromSqlServer($sqlServerFormat);
-
-            $this->assertEquals($uuid->string, $backToOriginal->string);
+            $backToOriginal = Uuid::importFromSqlServer($uuid->toSqlServer());
+            expect($backToOriginal->string)->toBe($uuid->string);
         }
-    }
+    });
 
-    /**
-     * Test validation of SQL Server format detection
-     */
-    public function test_sql_server_format_detection(): void
-    {
-        // Valid GUID format should pass validation
-        $validGuid = '825B076B-44EC-E511-80DC-00155D0ABC54';
-        $this->assertTrue(Uuid::isSqlServerFormat($validGuid));
+    test('invalid SQL Server GUID throws exception', function () {
+        expect(fn () => Uuid::importFromSqlServer('invalid'))
+            ->toThrow(Exception::class, 'Invalid SQL Server GUID format');
+    });
 
-        // Invalid format should fail
-        $invalidGuid = 'not-a-guid';
-        $this->assertFalse(Uuid::isSqlServerFormat($invalidGuid));
-    }
-
-    /**
-     * Test error handling for invalid input
-     */
-    public function test_invalid_sql_server_guid(): void
-    {
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Invalid SQL Server GUID format');
-
-        Uuid::importFromSqlServer('invalid');
-    }
-
-    /**
-     * Test the exact byte reversal pattern
-     */
-    public function test_byte_reversal_pattern(): void
-    {
-        // Create a UUID with known byte pattern for testing
+    test('byte reversal pattern is correct', function () {
         $knownBytes = "\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F\x10";
-        $uuid = new \ReflectionClass(Uuid::class);
-        $constructor = $uuid->getConstructor();
-        $constructor->setAccessible(true);
-        $instance = $uuid->newInstanceWithoutConstructor();
+        $reflection = new ReflectionClass(Uuid::class);
+        $constructor = $reflection->getConstructor();
+        $instance = $reflection->newInstanceWithoutConstructor();
         $constructor->invoke($instance, $knownBytes);
 
         $sqlServerBinary = $instance->toSqlServerBinary();
 
-        // First 4 bytes should be reversed: 0x01020304 -> 0x04030201
-        $this->assertEquals("\x04\x03\x02\x01", substr($sqlServerBinary, 0, 4));
-
-        // Next 2 bytes should be reversed: 0x0506 -> 0x0605
-        $this->assertEquals("\x06\x05", substr($sqlServerBinary, 4, 2));
-
-        // Next 2 bytes should be reversed: 0x0708 -> 0x0807
-        $this->assertEquals("\x08\x07", substr($sqlServerBinary, 6, 2));
-
-        // Last 8 bytes should remain unchanged
-        $this->assertEquals("\x09\x0A\x0B\x0C\x0D\x0E\x0F\x10", substr($sqlServerBinary, 8, 8));
-    }
-}
+        // First 4 bytes reversed
+        expect(substr($sqlServerBinary, 0, 4))->toBe("\x04\x03\x02\x01")
+            // Next 2 bytes reversed
+            ->and(substr($sqlServerBinary, 4, 2))->toBe("\x06\x05")
+            // Next 2 bytes reversed
+            ->and(substr($sqlServerBinary, 6, 2))->toBe("\x08\x07")
+            // Last 8 bytes unchanged
+            ->and(substr($sqlServerBinary, 8, 8))->toBe("\x09\x0A\x0B\x0C\x0D\x0E\x0F\x10");
+    });
+});
