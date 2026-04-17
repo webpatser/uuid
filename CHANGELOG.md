@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking Changes
 - PHP requirement raised to `^8.5`
-- Removed `isSqlServerFormat()` (stub that never worked — was identical to `validate()`)
+- Removed `isSqlServerFormat()` (stub that never worked, was identical to `validate()`)
 - Switched test suite from PHPUnit to Pest 4
 
 ### Added
@@ -85,7 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ~40% faster than ramsey/uuid on V4
 - ~45% faster than ramsey/uuid on V7
 - Cryptographically secure via `Random\Randomizer` (OS CSPRNG)
-- No external dependencies — pure PHP
+- No external dependencies, pure PHP
 
 [2.0.0]: https://github.com/webpatser/uuid/compare/v1.3.0...v2.0.0
 [1.3.0]: https://github.com/webpatser/uuid/compare/v1.2.2...v1.3.0
