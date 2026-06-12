@@ -78,7 +78,7 @@ class Uuid
 
     protected function __construct(string $uuid)
     {
-        if (! empty($uuid) && strlen($uuid) !== 16) {
+        if (strlen($uuid) !== 16) {
             throw new Exception('Input must be a 128-bit integer.');
         }
 
@@ -385,7 +385,16 @@ class Uuid
     #[\NoDiscard]
     public static function compare(string $a, string $b): bool
     {
-        return static::makeBin($a, 16) == static::makeBin($b, 16);
+        $binA = static::makeBin($a, 16);
+        $binB = static::makeBin($b, 16);
+
+        // Invalid input must never compare as equal: two unrelated invalid
+        // strings both yield null from makeBin() and would otherwise match.
+        if ($binA === null || $binB === null) {
+            return false;
+        }
+
+        return hash_equals($binA, $binB);
     }
 
     public function __get(string $var): mixed
@@ -472,11 +481,11 @@ class Uuid
     public static function validate(mixed $uuid): bool
     {
         if ($uuid instanceof self) {
-            return (bool) preg_match('~'.static::VALID_UUID_REGEX.'~', $uuid->string);
+            return (bool) preg_match('~'.static::VALID_UUID_REGEX.'~D', $uuid->string);
         }
 
         // Validate string format directly without importing (which could throw exception)
-        return (bool) preg_match('~'.static::VALID_UUID_REGEX.'~', (string) $uuid);
+        return (bool) preg_match('~'.static::VALID_UUID_REGEX.'~D', (string) $uuid);
     }
 
     #[\NoDiscard]
