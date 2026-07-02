@@ -57,6 +57,15 @@ describe('validation', function () {
             ->and(Uuid::validate(Uuid::generate(4)))->toBeTrue()
             ->and(Uuid::validate(Uuid::generate(5, 'example.com', Uuid::NS_DNS)))->toBeTrue();
     });
+
+    test('rejects a UUID with a trailing newline', function () {
+        $valid = (string) Uuid::generate(4);
+
+        expect(Uuid::validate($valid))->toBeTrue()
+            ->and(Uuid::validate($valid."\n"))->toBeFalse()
+            ->and(Uuid::validate($valid."\r\n"))->toBeFalse()
+            ->and(Uuid::validate("\n".$valid))->toBeFalse();
+    });
 });
 
 describe('version and variant', function () {
@@ -125,6 +134,13 @@ describe('compare', function () {
 
         expect(Uuid::compare($uuid1, $uuid1))->toBeTrue()
             ->and(Uuid::compare($uuid1, $uuid2))->toBeFalse();
+    });
+
+    test('two unrelated invalid strings never compare as equal', function () {
+        expect(Uuid::compare('not-a-uuid', 'also-not-a-uuid'))->toBeFalse()
+            ->and(Uuid::compare('garbage', 'garbage'))->toBeFalse()
+            ->and(Uuid::compare('', ''))->toBeFalse()
+            ->and(Uuid::compare((string) Uuid::generate(4), 'not-a-uuid'))->toBeFalse();
     });
 });
 
@@ -414,6 +430,15 @@ describe('error handling', function () {
     test('invalid import throws exception', function () {
         expect(fn () => Uuid::import('not-a-uuid'))
             ->toThrow(\TypeError::class);
+    });
+
+    test('empty string constructor throws exception', function () {
+        $reflection = new ReflectionClass(Uuid::class);
+        $constructor = $reflection->getConstructor();
+        $instance = $reflection->newInstanceWithoutConstructor();
+
+        expect(fn () => $constructor->invoke($instance, ''))
+            ->toThrow(Exception::class, 'Input must be a 128-bit integer.');
     });
 
     test('empty name for V3 throws exception', function () {
